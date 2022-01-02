@@ -2,6 +2,10 @@
 
 Backup your account's git repositories to a local folder.
 
+## Features
+
+Integration with:
+
 * [x] GitHub
 * [ ] GitHub Enterprise
 * [ ] GitLab
@@ -9,7 +13,7 @@ Backup your account's git repositories to a local folder.
 * [ ] BitBucket
 * [ ] BitBucket Server (BitBucket Data Center)
 
-## Advanced features
+### Advanced features
 
 * [ ] Backup of backup to cloud (s3 like)
 * [ ] GitWeb View

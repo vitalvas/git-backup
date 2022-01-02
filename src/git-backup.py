@@ -19,7 +19,7 @@ class GitBackup:
 
         self.session = requests.Session()
         self.repos = []
-        self.dest_dir = os.getenv('DATA_DIR', './data')
+        self.dest_dir = os.getenv('DATA_DIR', '../data')
 
     def run(self):
         self.get_repos()
