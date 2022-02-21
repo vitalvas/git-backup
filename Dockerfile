@@ -1,8 +1,8 @@
-FROM python:3-alpine
+FROM python:3-slim
 
 COPY src /app
 
-RUN apk add --update-cache --no-cache bash git openssh-client && \
+RUN apt update -qy && apt install bash git openssh-client && \
     pip3 install --compile --no-cache-dir -r /app/requirements.txt
 
 CMD ["/app/run.sh"]
