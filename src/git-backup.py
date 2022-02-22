@@ -1,8 +1,10 @@
 import logging
 import os.path
 import requests
+import shutil
+import git
+
 from urllib.parse import urlparse
-from git import Repo
 from uritemplate import expand as uri_expand
 
 
@@ -37,6 +39,10 @@ class GitBackup:
         url = urlparse(name)
         return os.path.join(self.dest_dir, url.netloc, url.path.removeprefix('/'))
 
+    def error_repo(self, path):
+        self.log.warning(f'error update repo: {path}')
+        shutil.rmtree(path)
+
     def make_mirror(self):
         for repo in self.repos:
             path = self.get_dest_dir(repo.get('url'))
@@ -48,13 +54,19 @@ class GitBackup:
             if not os.path.exists(path):
                 os.makedirs(path, exist_ok=True)
                 self.log.warning(f'add new repo: {path}')
-                Repo.clone_from(repo.get('clone_url'), path, bare=True, mirror=True)
+                try:
+                    git.Repo.clone_from(repo.get('clone_url'), path, bare=True, mirror=True)
+                except git.exc.InvalidGitRepositoryError:
+                    self.error_repo(path)
 
             else:
                 self.log.warning(f'updating repo: {path}')
-                git_repo = Repo(path, search_parent_directories=True)
-                for remote in git_repo.remotes:
-                    remote.fetch('+refs/heads/*:refs/remotes/origin/*')
+                try:
+                    git_repo = git.Repo(path, search_parent_directories=True)
+                    for remote in git_repo.remotes:
+                        remote.fetch('+refs/heads/*:refs/remotes/origin/*')
+                except git.exc.InvalidGitRepositoryError:
+                    self.error_repo(path)
 
     def get_json(self, url):
         resp = self.session.get(url)
