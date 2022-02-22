@@ -49,7 +49,7 @@ class GitBackup:
 
             repo_id = repo.get('id')
             if repo_id and path.endswith('.git'):
-                path = path[:-4] + f'-{ids}' + path[-4:]
+                path = path[:-4] + f'-{repo_id}' + path[-4:]
 
             if not os.path.exists(path):
                 os.makedirs(path, exist_ok=True)
