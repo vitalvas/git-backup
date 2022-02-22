@@ -7,6 +7,9 @@ Backup your account's git repositories to a local folder.
 Integration with:
 
 * [x] GitHub
+  * [x] Starred
+  * [ ] Gist
+  * [ ] Wiki
 * [ ] GitHub Enterprise
 * [ ] GitLab
 * [ ] GitLab Self-hosted

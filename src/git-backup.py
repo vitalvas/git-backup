@@ -3,6 +3,7 @@ import os.path
 import requests
 from urllib.parse import urlparse
 from git import Repo
+from uritemplate import expand as uri_expand
 
 
 class GitBackup:
@@ -55,24 +56,47 @@ class GitBackup:
                 for remote in git_repo.remotes:
                     remote.fetch('+refs/heads/*:refs/remotes/origin/*')
 
+    def get_json(self, url):
+        resp = self.session.get(url)
+        resp.raise_for_status()
+        return resp.json()
+
 
 class Github(GitBackup):
     def __init__(self, creds=None):
         super(Github, self).__init__()
+        self.github_api = os.getenv('GITHUB_API_ADDR', 'api.github.com')
+        
         if creds:
             self.session.auth = creds
 
     def get_repos(self):
-        github_api = os.getenv('GITHUB_API_ADDR', 'api.github.com')
-        resp = self.session.get(f'https://{github_api}/user/repos')
+        user = self.get_json(f'https://{self.github_api}/user')
+        
+        resp = self.session.get(f'https://{self.github_api}/user/repos')
+        resp.raise_for_status()
         repos = resp.json()
 
         while 'next' in resp.links.keys():
             resp = self.session.get(resp.links['next']['url'])
+            resp.raise_for_status()
             repos.extend(resp.json())
 
         for repo in repos:
             self.add_repo(repo.get('id'), repo.get('ssh_url'), repo.get('clone_url'))
+            
+        if os.getenv('GITHUB_STARRED'):            
+            resp_star = self.session.get(uri_expand(user.get('starred_url')))
+            resp_star.raise_for_status()
+            starred = resp_star.json()
+            
+            while 'next' in resp_star.links.keys():
+                resp_star = self.session.get(resp_star.links['next']['url'])
+                resp_star.raise_for_status()
+                starred.extend(resp_star.json())
+            
+            for repo in starred:
+                self.add_repo(repo.get('id'), repo.get('ssh_url'), repo.get('clone_url'))                
 
 
 if __name__ == '__main__':
