@@ -48,8 +48,8 @@ class GitBackup:
             path = self.get_dest_dir(repo.get('url'))
 
             repo_id = repo.get('id')
-            if repo_id:
-                path = path.replace('.git', '-' + str(repo_id) + '.git')
+            if repo_id and path.endswith('.git'):
+                path = path[:-4] + f'-{ids}' + path[-4:]
 
             if not os.path.exists(path):
                 os.makedirs(path, exist_ok=True)
