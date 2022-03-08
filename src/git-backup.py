@@ -3,6 +3,7 @@ import os.path
 import requests
 import shutil
 import git
+from datetime import datetime
 
 from urllib.parse import urlparse
 from uritemplate import expand as uri_expand
@@ -23,6 +24,7 @@ class GitBackup:
         self.session = requests.Session()
         self.repos = []
         self.dest_dir = os.getenv('DATA_DIR', '../data')
+        self.archive_dir = os.getenv('ARCHIVE_DIR', os.path.join(self.dest_dir, 'archive'))
 
     def run(self):
         self.get_repos()
@@ -41,7 +43,8 @@ class GitBackup:
 
     def error_repo(self, path):
         self.log.warning(f'error update repo: {path}')
-        shutil.rmtree(path)
+        archive_path = os.path.join(self.archive_dir, 'error', datetime.now().strftime('%Y%m%d/%H%M'))
+        shutil.move(path, os.path.join(archive_path, path.removeprefix(self.dest_dir).removeprefix('/')))
 
     def make_mirror(self):
         for repo in self.repos:
