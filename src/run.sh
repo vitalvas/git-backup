@@ -9,7 +9,7 @@ fi
 echo -n "SSH Key for backup: "
 cat ${DATA_DIR}/id_rsa.pub
 
-ssh-keyscan -H github.com >> /etc/ssh/ssh_known_hosts
+ssh-keyscan -H github.com >> /etc/ssh/ssh_known_hosts 2>/dev/null
 
 git config --global core.sshCommand "ssh -i ${DATA_DIR}/id_rsa -F /dev/null"
 
