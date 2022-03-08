@@ -50,8 +50,13 @@ class GitBackup:
         for repo in self.repos:
             path = self.get_dest_dir(repo.get('url'))
 
+            if path.endswith('.wiki.git') and not self.git_lsremote(repo.get('clone_url')):
+                continue
+
             repo_id = repo.get('id')
-            if repo_id and path.endswith('.git'):
+            if repo_id and path.endswith('.wiki.git'):
+                path = path[:-9] + f'-{repo_id}' + path[-9:]
+            elif repo_id and path.endswith('.git'):
                 path = path[:-4] + f'-{repo_id}' + path[-4:]
 
             if not os.path.exists(path):
@@ -76,6 +81,16 @@ class GitBackup:
         resp.raise_for_status()
         return resp.json()
 
+    @staticmethod
+    def git_lsremote(url):
+        g = git.cmd.Git()
+        try:
+            g.ls_remote(url)
+        except git.exc.GitCommandError:
+            return None
+
+        return True
+
 
 class Github(GitBackup):
     def __init__(self, creds=None):
@@ -84,6 +99,24 @@ class Github(GitBackup):
         
         if creds:
             self.session.auth = creds
+
+    @staticmethod
+    def _get_wiki_path(path):
+        if path.endswith('.git'):
+            path = path[:-4] + f'.wiki' + path[-4:]
+        else:
+            path += '.wiki'
+        return path
+
+    def _process_repo(self, repo):
+        if os.getenv('GITHUB_WIKI') and repo.get('has_wiki'):
+            self.add_repo(
+                repo.get('id'),
+                self._get_wiki_path(repo.get('ssh_url')),
+                self._get_wiki_path(repo.get('clone_url'))
+            )
+
+        self.add_repo(repo.get('id'), repo.get('ssh_url'), repo.get('clone_url'))
 
     def get_repos(self):
         user = self.get_json(f'https://{self.github_api}/user')
@@ -98,7 +131,7 @@ class Github(GitBackup):
             repos.extend(resp.json())
 
         for repo in repos:
-            self.add_repo(repo.get('id'), repo.get('ssh_url'), repo.get('clone_url'))
+            self._process_repo(repo)
             
         if os.getenv('GITHUB_STARRED'):            
             resp_star = self.session.get(uri_expand(user.get('starred_url')))
@@ -111,7 +144,7 @@ class Github(GitBackup):
                 starred.extend(resp_star.json())
             
             for repo in starred:
-                self.add_repo(repo.get('id'), repo.get('ssh_url'), repo.get('clone_url'))                
+                self._process_repo(repo)
 
 
 if __name__ == '__main__':
