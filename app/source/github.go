@@ -15,16 +15,29 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func RunGitHub() {
-	ctx := context.Background()
+type GitHubSource struct {
+	ctx    context.Context
+	client *github.Client
+	user   string
+}
 
-	tc := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
+func NewGitHub() *GitHubSource {
+	this := &GitHubSource{
+		ctx:  context.Background(),
+		user: os.Getenv("GITHUB_USER"),
+	}
+
+	tc := oauth2.NewClient(this.ctx, oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
 	))
 
-	client := github.NewClient(tc)
+	this.client = github.NewClient(tc)
 
-	_, response, err := client.Users.Get(ctx, os.Getenv("GITHUB_USER"))
+	return this
+}
+
+func (this *GitHubSource) Run() {
+	_, response, err := this.client.Users.Get(this.ctx, os.Getenv("GITHUB_USER"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -40,33 +53,33 @@ func RunGitHub() {
 	var countRepos uint64
 
 	if len(os.Getenv("GITHUB_SKIP_MAIN")) == 0 {
-		countRepos += githubUserRepos(ctx, client)
+		countRepos += this.runUserRepos()
 	}
 
 	if len(os.Getenv("GITHUB_STARRED")) > 0 {
-		countRepos += githubUserStarred(ctx, client)
+		countRepos += this.runUserStarred()
 	}
 
 	if len(os.Getenv("GITHUB_GIST")) > 0 {
-		countRepos += githubGist(ctx, client)
+		countRepos += this.runGist()
 	}
 
 	log.Println("total count", countRepos)
 }
 
-func githubUserRepos(ctx context.Context, client *github.Client) (count uint64) {
+func (this *GitHubSource) runUserRepos() (count uint64) {
 	opts := &github.RepositoryListOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
 
 	for {
-		repos, resp, err := client.Repositories.List(ctx, os.Getenv("GITHUB_USER"), opts)
+		repos, resp, err := this.client.Repositories.List(this.ctx, this.user, opts)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		for _, repo := range repos {
-			if githubBackupRepo(repo) {
+			if this.backupRepo(repo) {
 				count++
 			}
 		}
@@ -81,19 +94,19 @@ func githubUserRepos(ctx context.Context, client *github.Client) (count uint64) 
 	return
 }
 
-func githubUserStarred(ctx context.Context, client *github.Client) (count uint64) {
+func (this *GitHubSource) runUserStarred() (count uint64) {
 	opts := &github.ActivityListStarredOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
 
 	for {
-		repos, resp, err := client.Activity.ListStarred(ctx, os.Getenv("GITHUB_USER"), opts)
+		repos, resp, err := this.client.Activity.ListStarred(this.ctx, this.user, opts)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		for _, repo := range repos {
-			if githubBackupRepo(repo.Repository) {
+			if this.backupRepo(repo.Repository) {
 				count++
 			}
 		}
@@ -108,13 +121,13 @@ func githubUserStarred(ctx context.Context, client *github.Client) (count uint64
 	return
 }
 
-func githubGist(ctx context.Context, client *github.Client) (count uint64) {
+func (this *GitHubSource) runGist() (count uint64) {
 	opts := &github.GistListOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
 
 	for {
-		gists, resp, err := client.Gists.List(ctx, os.Getenv("GITHUB_USER"), opts)
+		gists, resp, err := this.client.Gists.List(this.ctx, os.Getenv("GITHUB_USER"), opts)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -146,7 +159,7 @@ func githubGist(ctx context.Context, client *github.Client) (count uint64) {
 	return
 }
 
-func githubBackupRepo(repo *github.Repository) bool {
+func (this *GitHubSource) backupRepo(repo *github.Repository) bool {
 	if len(repo.GetCloneURL()) == 0 || repo.GetPrivate() {
 		return false
 	}

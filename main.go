@@ -12,8 +12,11 @@ func init() {
 }
 
 func main() {
+	github := source.NewGitHub()
+
 	for {
-		source.RunGitHub()
+		github.Run()
+
 		time.Sleep(time.Hour)
 	}
 }
