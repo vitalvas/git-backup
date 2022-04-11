@@ -9,4 +9,6 @@ Integration with:
 * [x] GitHub
   * [x] Starred
   * [x] Gist
+    * [x] Public
+    * [ ] Private
   * [x] Wiki

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -16,9 +17,11 @@ import (
 )
 
 type GitHubSource struct {
-	ctx    context.Context
-	client *github.Client
-	user   string
+	ctx         context.Context
+	client      *github.Client
+	httpClient  *http.Client
+	user        string
+	accessToken string
 }
 
 func NewGitHub() *GitHubSource {
@@ -27,17 +30,19 @@ func NewGitHub() *GitHubSource {
 		user: os.Getenv("GITHUB_USER"),
 	}
 
-	tc := oauth2.NewClient(this.ctx, oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
+	this.accessToken = os.Getenv("GITHUB_TOKEN")
+
+	this.httpClient = oauth2.NewClient(this.ctx, oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: this.accessToken},
 	))
 
-	this.client = github.NewClient(tc)
+	this.client = github.NewClient(this.httpClient)
 
 	return this
 }
 
 func (this *GitHubSource) Run() {
-	_, response, err := this.client.Users.Get(this.ctx, os.Getenv("GITHUB_USER"))
+	_, response, err := this.client.Users.Get(this.ctx, this.user)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -127,7 +132,7 @@ func (this *GitHubSource) runGist() (count uint64) {
 	}
 
 	for {
-		gists, resp, err := this.client.Gists.List(this.ctx, os.Getenv("GITHUB_USER"), opts)
+		gists, resp, err := this.client.Gists.List(this.ctx, this.user, opts)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -144,7 +149,7 @@ func (this *GitHubSource) runGist() (count uint64) {
 
 			storagePath := path.Join(os.Getenv("DATA_DIR"), "data", u.Host, u.Path)
 
-			backup.NewBackupRepo(storagePath, gist.GetGitPullURL(), true)
+			backup.NewBackupRepo(storagePath, gist.GetGitPullURL(), true, nil)
 
 			count++
 		}
@@ -160,7 +165,7 @@ func (this *GitHubSource) runGist() (count uint64) {
 }
 
 func (this *GitHubSource) backupRepo(repo *github.Repository) bool {
-	if len(repo.GetCloneURL()) == 0 || repo.GetPrivate() {
+	if len(repo.GetCloneURL()) == 0 {
 		return false
 	}
 
@@ -173,7 +178,11 @@ func (this *GitHubSource) backupRepo(repo *github.Repository) bool {
 		fmt.Sprintf("%s-%d.git", strings.TrimSuffix(u.Path, ".git"), repo.GetID()),
 	)
 
-	backup.NewBackupRepo(storagePath, repo.GetCloneURL(), false)
+	if repo.GetPrivate() {
+		backup.NewBackupRepo(storagePath, repo.GetCloneURL(), false, &this.accessToken)
+	} else {
+		backup.NewBackupRepo(storagePath, repo.GetCloneURL(), false, nil)
+	}
 
 	if repo.GetHasWiki() {
 		wikiCloneURL := fmt.Sprintf("%s.wiki.git", strings.TrimSuffix(repo.GetCloneURL(), ".git"))
@@ -182,7 +191,11 @@ func (this *GitHubSource) backupRepo(repo *github.Repository) bool {
 			fmt.Sprintf("%s-%d.wiki.git", strings.TrimSuffix(u.Path, ".git"), repo.GetID()),
 		)
 
-		backup.NewBackupRepo(storagePathWiki, wikiCloneURL, true)
+		if repo.GetPrivate() {
+			backup.NewBackupRepo(storagePath, repo.GetCloneURL(), false, &this.accessToken)
+		} else {
+			backup.NewBackupRepo(storagePathWiki, wikiCloneURL, true, nil)
+		}
 	}
 
 	return true
