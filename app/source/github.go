@@ -84,6 +84,10 @@ func (this *GitHubSource) runUserRepos() (count uint64) {
 		}
 
 		for _, repo := range repos {
+			if len(os.Getenv("GITHUB_SKIP_USER_FORKS")) > 0 && repo.GetFork() {
+				continue
+			}
+
 			if this.backupRepo(repo) {
 				count++
 			}
@@ -192,7 +196,7 @@ func (this *GitHubSource) backupRepo(repo *github.Repository) bool {
 		)
 
 		if repo.GetPrivate() {
-			backup.NewBackupRepo(storagePath, repo.GetCloneURL(), false, &this.accessToken)
+			backup.NewBackupRepo(storagePath, wikiCloneURL, true, &this.accessToken)
 		} else {
 			backup.NewBackupRepo(storagePathWiki, wikiCloneURL, true, nil)
 		}
