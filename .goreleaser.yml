@@ -9,7 +9,6 @@ builds:
 dockers:
   - image_templates:
     - "vitalvas/git-backup:{{ .Tag }}-amd64"
-    use_buildx: true
     goarch: amd64
     dockerfile: Dockerfile
     extra_files:
