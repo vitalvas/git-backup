@@ -129,7 +129,7 @@ func githubGist(ctx context.Context, client *github.Client) (count uint64) {
 				log.Fatal(err)
 			}
 
-			storagePath := path.Join("tmp", "data", u.Host, u.Path)
+			storagePath := path.Join(os.Getenv("DATA_DIR"), "data", u.Host, u.Path)
 
 			backup.NewBackupRepo(storagePath, gist.GetGitPullURL(), true)
 
@@ -156,7 +156,7 @@ func githubBackupRepo(repo *github.Repository) bool {
 		log.Fatal(err)
 	}
 
-	storagePath := path.Join("tmp", "data", u.Host,
+	storagePath := path.Join(os.Getenv("DATA_DIR"), "data", u.Host,
 		fmt.Sprintf("%s-%d.git", strings.TrimSuffix(u.Path, ".git"), repo.GetID()),
 	)
 
@@ -165,7 +165,7 @@ func githubBackupRepo(repo *github.Repository) bool {
 	if repo.GetHasWiki() {
 		wikiCloneURL := fmt.Sprintf("%s.wiki.git", strings.TrimSuffix(repo.GetCloneURL(), ".git"))
 
-		storagePathWiki := path.Join("tmp", "data", u.Host,
+		storagePathWiki := path.Join(os.Getenv("DATA_DIR"), "data", u.Host,
 			fmt.Sprintf("%s-%d.wiki.git", strings.TrimSuffix(u.Path, ".git"), repo.GetID()),
 		)
 
