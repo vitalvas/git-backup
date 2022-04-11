@@ -6,14 +6,25 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v5/storage/filesystem"
 )
+
+var fileCache *cache.ObjectLRU
+
+func init() {
+	fileCache = cache.NewObjectLRU(64 * cache.MiByte)
+}
 
 func NewBackupRepo(path, cloneUrl string, skipError bool, accessToken *string) {
 	start := time.Now()
+
+	defer fileCache.Clear()
 
 	fetchOpts := &git.FetchOptions{
 		RefSpecs: []config.RefSpec{"+refs/*:refs/*"},
@@ -35,7 +46,10 @@ func NewBackupRepo(path, cloneUrl string, skipError bool, accessToken *string) {
 			Tags: git.AllTags,
 		}
 
-		repo, err := git.PlainClone(path, true, opts)
+		storage := filesystem.NewStorage(osfs.New(path), fileCache)
+		defer storage.Close()
+
+		repo, err := git.Clone(storage, nil, opts)
 
 		if err != nil && !skipError && err != transport.ErrEmptyRemoteRepository {
 			log.Fatal(err)
@@ -48,7 +62,8 @@ func NewBackupRepo(path, cloneUrl string, skipError bool, accessToken *string) {
 		if repo != nil {
 			if err := repo.Fetch(fetchOpts); err != nil &&
 				err != git.NoErrAlreadyUpToDate &&
-				err != git.ErrRemoteNotFound {
+				err != git.ErrRemoteNotFound &&
+				err != transport.ErrEmptyRemoteRepository {
 				log.Fatal(err)
 			}
 		}
