@@ -8,7 +8,7 @@ builds:
 
 dockers:
   - image_templates:
-    - "vitalvas/git-backup:{{ .Tag }}-amd64"
+    - "ghcr.io/vitalvas/git-backup:{{ .Tag }}-amd64"
     goarch: amd64
     dockerfile: Dockerfile
     extra_files:
