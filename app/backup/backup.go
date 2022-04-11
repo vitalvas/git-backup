@@ -9,7 +9,7 @@ import (
 	"github.com/go-git/go-git/v5/config"
 )
 
-func NewBackupRepo(path, cloneUrl string) {
+func NewBackupRepo(path, cloneUrl string, skipError bool) {
 	start := time.Now()
 
 	fetchOpts := &git.FetchOptions{
@@ -24,12 +24,16 @@ func NewBackupRepo(path, cloneUrl string) {
 		}
 
 		repo, err := git.PlainClone(path, true, opts)
-		if err != nil {
+		if err != nil && !skipError {
 			log.Fatal(err)
+		} else if err != nil && skipError {
+			return
 		}
 
-		if err := repo.Fetch(fetchOpts); err != nil && err != git.NoErrAlreadyUpToDate {
-			log.Fatal(err)
+		if repo != nil {
+			if err := repo.Fetch(fetchOpts); err != nil && err != git.NoErrAlreadyUpToDate {
+				log.Fatal(err)
+			}
 		}
 
 	} else {

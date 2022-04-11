@@ -102,7 +102,17 @@ func githubBackupRepo(repo *github.Repository) bool {
 		fmt.Sprintf("%s-%d.git", strings.TrimSuffix(u.Path, ".git"), repo.GetID()),
 	)
 
-	backup.NewBackupRepo(storagePath, repo.GetCloneURL())
+	backup.NewBackupRepo(storagePath, repo.GetCloneURL(), false)
+
+	if repo.GetHasWiki() {
+		wikiCloneURL := fmt.Sprintf("%s.wiki.git", strings.TrimSuffix(repo.GetCloneURL(), ".git"))
+
+		storagePathWiki := path.Join("tmp", "data", u.Host,
+			fmt.Sprintf("%s-%d.wiki.git", strings.TrimSuffix(u.Path, ".git"), repo.GetID()),
+		)
+
+		backup.NewBackupRepo(storagePathWiki, wikiCloneURL, true)
+	}
 
 	return true
 }

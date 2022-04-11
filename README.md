@@ -9,4 +9,4 @@ Integration with:
 * [x] GitHub
   * [x] Starred
   * [ ] Gist
-  * [ ] Wiki
+  * [x] Wiki
