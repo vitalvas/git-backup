@@ -3,6 +3,7 @@ package backup
 import (
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -62,7 +63,9 @@ func NewBackupRepo(path, cloneUrl string, skipError bool, accessToken *string) {
 
 		if repo != nil {
 			if err := repo.Fetch(fetchOpts); err != nil && err != git.NoErrAlreadyUpToDate {
-				log.Fatal(err)
+				if !strings.Contains(err.Error(), "ERR access denied or repository not exported") {
+					log.Fatal(err)
+				}
 			}
 		}
 	}
