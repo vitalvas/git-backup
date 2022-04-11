@@ -17,8 +17,6 @@ func NewBackupRepo(path, cloneUrl string, skipError bool) {
 	}
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		log.Println("add new repo", cloneUrl)
-
 		opts := &git.CloneOptions{
 			URL: cloneUrl,
 		}
@@ -29,6 +27,8 @@ func NewBackupRepo(path, cloneUrl string, skipError bool) {
 		} else if err != nil && skipError {
 			return
 		}
+
+		log.Println("add new repo", cloneUrl)
 
 		if repo != nil {
 			if err := repo.Fetch(fetchOpts); err != nil && err != git.NoErrAlreadyUpToDate {
@@ -44,13 +44,14 @@ func NewBackupRepo(path, cloneUrl string, skipError bool) {
 			log.Fatal(err)
 		}
 
-		if err := repo.Fetch(fetchOpts); err != nil && err != git.NoErrAlreadyUpToDate {
-			log.Fatal(err)
+		if repo != nil {
+			if err := repo.Fetch(fetchOpts); err != nil && err != git.NoErrAlreadyUpToDate {
+				log.Fatal(err)
+			}
 		}
 	}
 
-	t := time.Now()
-	elapsed := t.Sub(start)
+	elapsed := time.Now().Sub(start)
 
 	if elapsed > time.Minute {
 		log.Println("repo", cloneUrl, "processing time:", elapsed)

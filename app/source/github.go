@@ -25,10 +25,16 @@ func RunGitHub() {
 
 	var countRepos uint64
 
-	countRepos += githubUserRepos(ctx, client)
+	if len(os.Getenv("GITHUB_SKIP_MAIN")) == 0 {
+		countRepos += githubUserRepos(ctx, client)
+	}
 
 	if len(os.Getenv("GITHUB_STARRED")) > 0 {
 		countRepos += githubUserStarred(ctx, client)
+	}
+
+	if len(os.Getenv("GITHUB_GIST")) > 0 {
+		countRepos += githubGist(ctx, client)
 	}
 
 	log.Println("total count", countRepos)
@@ -76,6 +82,44 @@ func githubUserStarred(ctx context.Context, client *github.Client) (count uint64
 			if githubBackupRepo(repo.Repository) {
 				count++
 			}
+		}
+
+		if resp.NextPage == 0 {
+			break
+		}
+
+		opts.Page = resp.NextPage
+	}
+
+	return
+}
+
+func githubGist(ctx context.Context, client *github.Client) (count uint64) {
+	opts := &github.GistListOptions{
+		ListOptions: github.ListOptions{PerPage: 100},
+	}
+
+	for {
+		gists, resp, err := client.Gists.List(ctx, os.Getenv("GITHUB_USER"), opts)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		for _, gist := range gists {
+			if !gist.GetPublic() {
+				continue
+			}
+
+			u, err := url.Parse(gist.GetGitPullURL())
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			storagePath := path.Join("tmp", "data", u.Host, u.Path)
+
+			backup.NewBackupRepo(storagePath, gist.GetGitPullURL(), true)
+
+			count++
 		}
 
 		if resp.NextPage == 0 {

@@ -8,5 +8,5 @@ Integration with:
 
 * [x] GitHub
   * [x] Starred
-  * [ ] Gist
+  * [x] Gist
   * [x] Wiki
