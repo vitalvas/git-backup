@@ -18,9 +18,9 @@ dockers:
       - "--platform=linux/amd64"
 
 docker_manifests:
-  - name_template: vitalvas/git-backup:{{ .Tag }}
+  - name_template: ghcr.io/vitalvas/git-backup:{{ .Tag }}
     image_templates:
-      - vitalvas/git-backup:{{ .Tag }}-amd64
-  - name_template: vitalvas/git-backup:latest
+      - ghcr.io/vitalvas/git-backup:{{ .Tag }}-amd64
+  - name_template: ghcr.io/vitalvas/git-backup:latest
     image_templates:
-      - vitalvas/git-backup:{{ .Tag }}-amd64
+      - ghcr.io/vitalvas/git-backup:{{ .Tag }}-amd64
