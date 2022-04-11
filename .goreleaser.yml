@@ -1,0 +1,27 @@
+builds:
+  - goos:
+      - linux
+    goarch:
+      - amd64
+    ldflags:
+      - -s -w
+
+dockers:
+  - image_templates:
+    - "vitalvas/git-backup:{{ .Tag }}-amd64"
+    use_buildx: true
+    goarch: amd64
+    dockerfile: Dockerfile
+    extra_files:
+      - LICENSE
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/amd64"
+
+docker_manifests:
+  - name_template: vitalvas/git-backup:{{ .Tag }}
+    image_templates:
+      - vitalvas/git-backup:{{ .Tag }}-amd64
+  - name_template: vitalvas/git-backup:latest
+    image_templates:
+      - vitalvas/git-backup:{{ .Tag }}-amd64

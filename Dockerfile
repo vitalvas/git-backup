@@ -1,8 +1,4 @@
-FROM python:3-slim
-
-COPY src /app
-
-RUN apt update -qy && apt install -qy bash git openssh-client && \
-    pip3 install --compile --no-cache-dir -r /app/requirements.txt
-
-CMD ["/app/run.sh"]
+FROM ubuntu:latest
+COPY vxdb /bin/git-backup
+ENV DATA_DIR="/data"
+CMD ["/bin/git-backup"]

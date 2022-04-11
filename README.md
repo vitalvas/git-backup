@@ -8,15 +8,7 @@ Integration with:
 
 * [x] GitHub
   * [x] Starred
-  * [ ] Gist
+  * [x] Gist
+    * [x] Public
+    * [ ] Private
   * [x] Wiki
-* [ ] GitHub Enterprise
-* [ ] GitLab
-* [ ] GitLab Self-hosted
-* [ ] BitBucket
-* [ ] BitBucket Server (BitBucket Data Center)
-
-### Advanced features
-
-* [ ] Backup of backup to cloud (s3 like)
-* [ ] GitWeb View
