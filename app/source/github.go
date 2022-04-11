@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/google/go-github/v43/github"
 	"github.com/vitalvas/git-backup/app/backup"
@@ -22,6 +23,19 @@ func RunGitHub() {
 	))
 
 	client := github.NewClient(tc)
+
+	_, response, err := client.Users.Get(ctx, os.Getenv("GITHUB_USER"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if response.Rate.Remaining < 10 {
+		delayTime := response.Rate.Reset.UTC().Sub(time.Now().UTC()) + (5 * time.Minute)
+
+		log.Println("API rate limit expended. Used", response.Rate.Remaining, "of", response.Rate.Limit, ". Delay", delayTime)
+
+		time.Sleep(delayTime)
+	}
 
 	var countRepos uint64
 

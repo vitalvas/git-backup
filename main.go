@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/vitalvas/git-backup/app/source"
 )
@@ -11,5 +12,8 @@ func init() {
 }
 
 func main() {
-	source.RunGitHub()
+	for {
+		source.RunGitHub()
+		time.Sleep(time.Hour)
+	}
 }
