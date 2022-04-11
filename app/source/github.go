@@ -196,7 +196,7 @@ func (this *GitHubSource) backupRepo(repo *github.Repository) bool {
 		)
 
 		if repo.GetPrivate() {
-			backup.NewBackupRepo(storagePath, wikiCloneURL, true, &this.accessToken)
+			backup.NewBackupRepo(storagePathWiki, wikiCloneURL, true, &this.accessToken)
 		} else {
 			backup.NewBackupRepo(storagePathWiki, wikiCloneURL, true, nil)
 		}
