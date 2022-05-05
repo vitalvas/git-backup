@@ -78,7 +78,8 @@ func NewBackupRepo(path, cloneUrl string, skipError bool, accessToken *string) {
 
 		if repo != nil {
 			if err := repo.Fetch(fetchOpts); err != nil && err != git.NoErrAlreadyUpToDate {
-				if !strings.Contains(err.Error(), "ERR access denied or repository not exported") {
+				if !strings.Contains(err.Error(), "ERR access denied or repository not exported") &&
+					err != transport.ErrEmptyRemoteRepository {
 					log.Fatal(err)
 				}
 			}
