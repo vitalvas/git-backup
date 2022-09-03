@@ -41,8 +41,8 @@ func NewGitHub() *GitHubSource {
 	return this
 }
 
-func (this *GitHubSource) Run() {
-	_, response, err := this.client.Users.Get(this.ctx, this.user)
+func (ghs *GitHubSource) Run() {
+	_, response, err := ghs.client.Users.Get(ghs.ctx, ghs.user)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -58,27 +58,27 @@ func (this *GitHubSource) Run() {
 	var countRepos uint64
 
 	if len(os.Getenv("GITHUB_SKIP_MAIN")) == 0 {
-		countRepos += this.runUserRepos()
+		countRepos += ghs.runUserRepos()
 	}
 
 	if len(os.Getenv("GITHUB_STARRED")) > 0 {
-		countRepos += this.runUserStarred()
+		countRepos += ghs.runUserStarred()
 	}
 
 	if len(os.Getenv("GITHUB_GIST")) > 0 {
-		countRepos += this.runGist()
+		countRepos += ghs.runGist()
 	}
 
 	log.Println("total count", countRepos)
 }
 
-func (this *GitHubSource) runUserRepos() (count uint64) {
+func (ghs *GitHubSource) runUserRepos() (count uint64) {
 	opts := &github.RepositoryListOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
 
 	for {
-		repos, resp, err := this.client.Repositories.List(this.ctx, this.user, opts)
+		repos, resp, err := ghs.client.Repositories.List(ghs.ctx, ghs.user, opts)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -88,7 +88,7 @@ func (this *GitHubSource) runUserRepos() (count uint64) {
 				continue
 			}
 
-			if this.backupRepo(repo) {
+			if ghs.backupRepo(repo) {
 				count++
 			}
 		}
@@ -103,19 +103,19 @@ func (this *GitHubSource) runUserRepos() (count uint64) {
 	return
 }
 
-func (this *GitHubSource) runUserStarred() (count uint64) {
+func (ghs *GitHubSource) runUserStarred() (count uint64) {
 	opts := &github.ActivityListStarredOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
 
 	for {
-		repos, resp, err := this.client.Activity.ListStarred(this.ctx, this.user, opts)
+		repos, resp, err := ghs.client.Activity.ListStarred(ghs.ctx, ghs.user, opts)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		for _, repo := range repos {
-			if this.backupRepo(repo.Repository) {
+			if ghs.backupRepo(repo.Repository) {
 				count++
 			}
 		}
@@ -130,13 +130,13 @@ func (this *GitHubSource) runUserStarred() (count uint64) {
 	return
 }
 
-func (this *GitHubSource) runGist() (count uint64) {
+func (ghs *GitHubSource) runGist() (count uint64) {
 	opts := &github.GistListOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
 
 	for {
-		gists, resp, err := this.client.Gists.List(this.ctx, this.user, opts)
+		gists, resp, err := ghs.client.Gists.List(ghs.ctx, ghs.user, opts)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -153,7 +153,9 @@ func (this *GitHubSource) runGist() (count uint64) {
 
 			storagePath := path.Join(os.Getenv("DATA_DIR"), "data", u.Host, u.Path)
 
-			backup.NewBackupRepo(storagePath, gist.GetGitPullURL(), true, nil)
+			if err := backup.NewBackupRepo(storagePath, gist.GetGitPullURL(), true, nil); err != nil {
+				log.Fatal(err)
+			}
 
 			count++
 		}
@@ -165,10 +167,10 @@ func (this *GitHubSource) runGist() (count uint64) {
 		opts.Page = resp.NextPage
 	}
 
-	return
+	return 0
 }
 
-func (this *GitHubSource) backupRepo(repo *github.Repository) bool {
+func (ghs *GitHubSource) backupRepo(repo *github.Repository) bool {
 	if len(repo.GetCloneURL()) == 0 {
 		return false
 	}
@@ -183,9 +185,13 @@ func (this *GitHubSource) backupRepo(repo *github.Repository) bool {
 	)
 
 	if repo.GetPrivate() {
-		backup.NewBackupRepo(storagePath, repo.GetCloneURL(), false, &this.accessToken)
+		if err := backup.NewBackupRepo(storagePath, repo.GetCloneURL(), false, &ghs.accessToken); err != nil {
+			log.Fatal(err)
+		}
 	} else {
-		backup.NewBackupRepo(storagePath, repo.GetCloneURL(), false, nil)
+		if err := backup.NewBackupRepo(storagePath, repo.GetCloneURL(), false, nil); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	if repo.GetHasWiki() {
@@ -196,9 +202,13 @@ func (this *GitHubSource) backupRepo(repo *github.Repository) bool {
 		)
 
 		if repo.GetPrivate() {
-			backup.NewBackupRepo(storagePathWiki, wikiCloneURL, true, &this.accessToken)
+			if err := backup.NewBackupRepo(storagePathWiki, wikiCloneURL, true, &ghs.accessToken); err != nil {
+				log.Fatal(err)
+			}
 		} else {
-			backup.NewBackupRepo(storagePathWiki, wikiCloneURL, true, nil)
+			if err := backup.NewBackupRepo(storagePathWiki, wikiCloneURL, true, nil); err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 

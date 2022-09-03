@@ -21,7 +21,7 @@ func init() {
 	fileCache = cache.NewObjectLRU(64 * cache.MiByte)
 }
 
-func NewBackupRepo(path, cloneUrl string, skipError bool, accessToken *string) {
+func NewBackupRepo(path, cloneURL string, skipError bool, accessToken *string) error {
 	start := time.Now()
 
 	defer fileCache.Clear()
@@ -41,7 +41,7 @@ func NewBackupRepo(path, cloneUrl string, skipError bool, accessToken *string) {
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		opts := &git.CloneOptions{
-			URL:  cloneUrl,
+			URL:  cloneURL,
 			Auth: fetchOpts.Auth,
 			Tags: git.AllTags,
 		}
@@ -52,43 +52,45 @@ func NewBackupRepo(path, cloneUrl string, skipError bool, accessToken *string) {
 		repo, err := git.Clone(storage, nil, opts)
 
 		if err != nil && !skipError && err != transport.ErrEmptyRemoteRepository {
-			log.Fatal(err)
+			return err
 		} else if err != nil && skipError {
-			return
+			return nil
 		}
 
-		log.Println("add new repo", cloneUrl)
+		log.Println("add new repo", cloneURL)
 
 		if repo != nil {
 			if err := repo.Fetch(fetchOpts); err != nil &&
 				err != git.NoErrAlreadyUpToDate &&
 				err != git.ErrRemoteNotFound &&
 				err != transport.ErrEmptyRemoteRepository {
-				log.Fatal(err)
+				return err
 			}
 		}
 
 	} else {
-		log.Println("updating repo", cloneUrl)
+		log.Println("updating repo", cloneURL)
 
 		repo, err := git.PlainOpen(path)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		if repo != nil {
 			if err := repo.Fetch(fetchOpts); err != nil && err != git.NoErrAlreadyUpToDate {
 				if !strings.Contains(err.Error(), "ERR access denied or repository not exported") &&
 					err != transport.ErrEmptyRemoteRepository {
-					log.Fatal(err)
+					return err
 				}
 			}
 		}
 	}
 
-	elapsed := time.Now().Sub(start)
+	elapsed := time.Since(start)
 
 	if elapsed > time.Minute {
-		log.Println("repo", cloneUrl, "processing time:", elapsed)
+		log.Println("repo", cloneURL, "processing time:", elapsed)
 	}
+
+	return nil
 }
