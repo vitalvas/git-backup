@@ -1,9 +1,11 @@
 package api
 
 import (
+	"log"
 	"net/http"
 	"net/http/pprof"
 	"os"
+	"time"
 )
 
 func RunAPIServer() {
@@ -15,5 +17,13 @@ func RunAPIServer() {
 	r.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
 	r.HandleFunc("/debug/pprof/trace", pprof.Trace)
 
-	http.ListenAndServe(os.Getenv("API_SERVER_ADDR"), r)
+	srv := http.Server{
+		Addr:              os.Getenv("API_SERVER_ADDR"),
+		Handler:           r,
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+
+	if err := srv.ListenAndServe(); err != nil {
+		log.Fatal(err)
+	}
 }

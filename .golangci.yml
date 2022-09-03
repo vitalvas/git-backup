@@ -9,8 +9,6 @@ linters:
     - gocyclo
     - dupl
     - misspell
-    - varcheck
-    - deadcode
     - typecheck
     - ineffassign
     - stylecheck
