@@ -1,0 +1,13 @@
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: "/"
+    commit-message:
+      prefix: "ci:"
+    schedule:
+      interval: weekly
+      day: sunday
+    reviewers:
+      - "vitalvas"
+    assignees:
+      - "vitalvas"
